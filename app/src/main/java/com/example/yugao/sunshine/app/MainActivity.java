@@ -11,14 +11,19 @@ public class MainActivity extends ActionBarActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.fragment_main);
+        if(savedInstanceState == null){
+            getSupportFragmentManager().beginTransaction()
+                    .add(R.id.action_bar_container,new ForecastFragment())
+                    .commit();
+        }
     }
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.forecastfragment, menu);
+        getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
 
@@ -30,7 +35,7 @@ public class MainActivity extends ActionBarActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_refresh) {
+        if (id == R.id.action_settings) {
             return true;
         }
 
