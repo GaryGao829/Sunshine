@@ -37,6 +37,7 @@ import java.util.List;
  * A placeholder fragment containing a simple view.
  */
 public class ForecastFragment extends Fragment {
+    private ArrayAdapter<String> mForecastAdapter;
 
 
     public ForecastFragment() {
@@ -73,7 +74,6 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        ArrayAdapter<String> mForecastAdapter;
 
         String [] forecastArray = {
                 "Today - Sunny - 88/63",
@@ -83,7 +83,9 @@ public class ForecastFragment extends Fragment {
                 "Fri - Foggy - 70/46",
                 "Sat - Sunny - 75/68"
         };
+
         List<String> weekForecast = new ArrayList<String>(Arrays.asList(forecastArray));
+
         mForecastAdapter = new ArrayAdapter<String>(
                 getActivity(),
                 R.layout.list_item_forecast,
@@ -103,9 +105,10 @@ public class ForecastFragment extends Fragment {
     }
 
 
-class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
+class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
 
     final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
+    String[] WeatherList;
 
     @Override
 
@@ -188,7 +191,6 @@ class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
                     }
                 }
             }
-        String[] WeatherList = {};
         try {
             WeatherList = getWeatherDataFromJson(forecastJsonStr,numDays);
         }catch (JSONException e){
@@ -241,7 +243,7 @@ class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
             day = getReadableDateString(dateTime);
 
             JSONObject weatherObject = dayForecast.getJSONArray(OWM_WEATHER).getJSONObject(0);
-            description = getReadableDateString(dateTime);
+            description = weatherObject.getString(OWM_DESCRIPTION);
 
             JSONObject temperatureObject = dayForecast.getJSONObject(OWM_TEMPERATURE);
             double high = temperatureObject.getDouble(OWM_MAX);
@@ -256,6 +258,20 @@ class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
         return resultStrs;
     }
 
-
+    @Override
+    protected void onProgressUpdate(Integer... values) {
+        super.onProgressUpdate(values);
     }
+
+    @Override
+    protected void onPostExecute(String[] strings) {
+        mForecastAdapter.clear();
+        //mForecastAdapter.addAll(strings); this is not available in low version android(Android 3.0)
+        if(!strings.equals(null)) {
+            for (String weather : strings) {
+                mForecastAdapter.add(weather);
+            }
+        }
+    }
+}
 }

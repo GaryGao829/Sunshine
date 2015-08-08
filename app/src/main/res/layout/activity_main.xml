@@ -6,4 +6,5 @@
     android:layout_height="match_parent"
     tools:context = ".MainActivity"
     tools:ignore = "MergeRootFrame"
-/>
+    android:name="com.example.yugao.sunshine.app.ForecastFragment"
+    tools:layout="@layout/fragment_main" />
