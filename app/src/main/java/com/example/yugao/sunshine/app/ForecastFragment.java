@@ -1,9 +1,12 @@
 package com.example.yugao.sunshine.app;
 
+import android.content.Context;
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -11,9 +14,9 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.text.format.Time;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -49,9 +52,8 @@ public class ForecastFragment extends Fragment {
     }
 
     public void onCreateOptionsMenu(Menu menu,MenuInflater inflater){
-        inflater.inflate(R.menu.forecastfragment,menu);
+        inflater.inflate(R.menu.forecastfragment, menu);
     }
-
 
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
@@ -96,13 +98,25 @@ public class ForecastFragment extends Fragment {
         ListView listView = (ListView) rootView.findViewById(
                 R.id.listview_forecast);
         listView.setAdapter(mForecastAdapter);
-
-
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Context context = mForecastAdapter.getContext();
+                String weatherinfo = mForecastAdapter.getItem(position).toString();
+                //Toast toast = Toast.makeText(context, weatherinfo, Toast.LENGTH_SHORT);
+                //toast.show();
+                Intent sendIntent = new Intent(getActivity(),DetailActivity.class);
+                sendIntent.putExtra(Intent.EXTRA_TEXT,weatherinfo);
+                startActivity(sendIntent);
+            }
+        });
 
         return rootView;
 
 
     }
+
+
 
 
 class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
