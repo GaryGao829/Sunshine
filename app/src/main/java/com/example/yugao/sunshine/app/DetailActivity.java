@@ -25,7 +25,6 @@ public class DetailActivity extends ActionBarActivity {
         }
 
         Intent intent = getIntent();
-        //intent.putExtra()
 
     }
 

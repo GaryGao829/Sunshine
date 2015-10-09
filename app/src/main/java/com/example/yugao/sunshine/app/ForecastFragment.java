@@ -55,6 +55,11 @@ public class ForecastFragment extends Fragment {
         inflater.inflate(R.menu.forecastfragment, menu);
     }
 
+    /**
+     * 处理菜单中选项被点击时触发的动作
+     * @param item
+     * @return
+     */
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
@@ -62,6 +67,9 @@ public class ForecastFragment extends Fragment {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
+        /**
+         * 当Refresh被点击时候触发的内容
+         */
         if (id == R.id.action_refresh) {
             FetchWeatherTask weatherTask = new FetchWeatherTask();
             weatherTask.execute("94043");
@@ -76,7 +84,7 @@ public class ForecastFragment extends Fragment {
                              Bundle savedInstanceState) {
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-
+        //先用假数据进行填充
         String [] forecastArray = {
                 "Today - Sunny - 88/63",
                 "Tomorrow - Foggy - 70/46",
@@ -85,28 +93,33 @@ public class ForecastFragment extends Fragment {
                 "Fri - Foggy - 70/46",
                 "Sat - Sunny - 75/68"
         };
-
+        //把天气数组转化成List
         List<String> weekForecast = new ArrayList<String>(Arrays.asList(forecastArray));
 
+        //构造所需要的适配器
         mForecastAdapter = new ArrayAdapter<String>(
-                getActivity(),
-                R.layout.list_item_forecast,
-                R.id.list_item_forecast_textview,
-                weekForecast
+                getActivity(),  //当前的Context
+                R.layout.list_item_forecast,      //Layout 文件的Resource ID
+                R.id.list_item_forecast_textview, //待被填充的 Layout中的 TextView的ID
+                weekForecast                        //要在ListView中显示的内容
         );
 
+        //在制定ListView中 设置这个适配器
         ListView listView = (ListView) rootView.findViewById(
                 R.id.listview_forecast);
         listView.setAdapter(mForecastAdapter);
+
+        //给ListView设置触发器
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
+            //在ListView 中的Item被点击后进行Activity跳转
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Context context = mForecastAdapter.getContext();
                 String weatherinfo = mForecastAdapter.getItem(position).toString();
                 //Toast toast = Toast.makeText(context, weatherinfo, Toast.LENGTH_SHORT);
                 //toast.show();
-                Intent sendIntent = new Intent(getActivity(),DetailActivity.class);
-                sendIntent.putExtra(Intent.EXTRA_TEXT,weatherinfo);
+                Intent sendIntent = new Intent(getActivity(), DetailActivity.class);
+                sendIntent.putExtra(Intent.EXTRA_TEXT, weatherinfo);
                 startActivity(sendIntent);
             }
         });
@@ -117,15 +130,24 @@ public class ForecastFragment extends Fragment {
     }
 
 
-
-
+    /**
+     * 构建这个类用于异步获取天气信息
+     * 如果放在同一个线程中执行的话会导致UI卡顿 影响用户体验
+     *
+     *     AsyncTask是一个封装好的多线程类 用于在后台执行 简单的,耗时少的 操作然后对UI进行更新 不用手动操作多线程以及handlers
+     *     如果要长时间保持一个进程 或者要执行一个耗时较长的操作 那么Google的建议是结合 Executor, ThreadPoolExecutor and FutureTask 这三个类的API
+     *
+     */
 class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
 
     final String LOG_TAG = FetchWeatherTask.class.getSimpleName();
     String[] WeatherList;
 
     @Override
-
+    /**
+     * Override这个方法，实现
+     * 调用API获取天气信息
+     */
         public String[] doInBackground(String... params){
             // These two need to be declared outside the try/catch
             // so that they can be closed in the finally block.
@@ -147,24 +169,26 @@ class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
                 final String FORMAT_PARAM = "mode";
                 final String UNITS_PARAM = "units";
                 final String DAYS_PARAM = "cnt";
-
+                //构造Http请求
                 Uri buildUri = Uri.parse(FORECAST_BASE_URL).buildUpon()
                         .appendQueryParameter(QUERY_PARAM,params[0])
                         .appendQueryParameter(FORMAT_PARAM,format)
                         .appendQueryParameter(UNITS_PARAM,units)
                         .appendQueryParameter(DAYS_PARAM,Integer.toString(numDays))
                         .build();
-
+                //得到构造好的URL
                 URL url = new URL(buildUri.toString());
+
                 Log.v(LOG_TAG,"Built URI"+buildUri.toString());
 
-                // Create the request to OpenWeatherMap, and open the connection
+                //创建对OpenWeatherAPI的Http请求
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
                 Log.v(LOG_TAG, "before connect");
                 urlConnection.connect();
                 Log.v(LOG_TAG, "connect succeed");
-                // Read the input stream into a String
+
+                //得到返回的输入流
                 InputStream inputStream = urlConnection.getInputStream();
                 StringBuffer buffer = new StringBuffer();
                 if (inputStream == null) {
@@ -175,9 +199,8 @@ class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
 
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
+                    //因为是JSON 所以添加换行并不会对内容读取造成问题
+                    //但是这样会让debug的时候看起来很方便
                     buffer.append(line + "\n");
                 }
 
@@ -206,6 +229,7 @@ class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
                 }
             }
         try {
+           //forecastJsonStr 是Http请求返回得到的流（读取时候加入了\n） 这是一个JSON对象
             WeatherList = getWeatherDataFromJson(forecastJsonStr,numDays);
         }catch (JSONException e){
             Log.e(LOG_TAG,"Error",e);
@@ -229,6 +253,14 @@ class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
         return highLowStr;
         }
 
+
+    /**
+     * 把一个JSON对象解析的过程
+     * @param forecastJsonStr
+     * @param numDays
+     * @return String[]
+     * @throws JSONException
+     */
     private String[] getWeatherDataFromJson(String forecastJsonStr,int numDays) throws JSONException{
         final String OWM_LIST = "list";
         final String OWM_WEATHER = "weather";
@@ -245,6 +277,7 @@ class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
         dayTime = new Time();
 
         String[] resultStrs = new String[numDays];
+        //遍历一个JsonArray，解析每一项JSONObject 赋值给一个String[]
         for(int i = 0;i<weatherArray.length();i++){
             String day;
             String description;
@@ -273,17 +306,29 @@ class FetchWeatherTask extends AsyncTask<String, Integer, String[]> {
     }
 
     @Override
+    //用于反馈后台操作的状态更新 比如下载时候显示进度条
     protected void onProgressUpdate(Integer... values) {
         super.onProgressUpdate(values);
     }
 
     @Override
+    //把后台操作完成以后的结果 更新到适配器中
     protected void onPostExecute(String[] strings) {
         mForecastAdapter.clear();
         //mForecastAdapter.addAll(strings); this is not available in low version android(Android 3.0)
         if(!strings.equals(null)) {
             for (String weather : strings) {
                 mForecastAdapter.add(weather);
+                /**
+                 * 这里有个细节：
+                 *     Q:为什么在修改了适配器里面要填充的数据 UI所显示的会自动更改？
+                 *
+                 *     A:ArrayAdapter类中有一个变量boolean是 notifyOnChange 默认为true 此时如果这个
+                 *       ArrayAdapter对象执行了add(T), insert(T, int), remove(T), clear() 这些操作的时候会调用 notifyDataSetChanged() 用来通知UI
+                 *       要刷新内容。
+                 *       这个自动化的过程也可以通过设置 notifyOnChange 这个变量为false来关闭 这是就要手动调用notifyDataSetChanged()来更新UI
+                 *       所以这里我们只要用了add()就会自动更新UI数据。
+                 */
             }
         }
     }
